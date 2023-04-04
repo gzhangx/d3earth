@@ -1,0 +1,183 @@
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<html>
+<body>
+<div id="myPlot"></div>
+<select id="sel">
+</select>
+</body>
+<script>
+
+
+    const xSize = 500;
+    const ySize = 500;
+    const margin = 40;
+    const xMax = xSize - margin*2;
+    const yMax = ySize - margin*2;
+
+    // Create Random Points
+    const numPoints = 100;
+
+    let container = d3.select("#myPlot")
+    container = container.append("div");
+    container.style({
+        width: `${xSize}px`,
+        height: `${ySize}px`,
+    });
+    // Append SVG Object to the Page
+    const svg = container.append("svg")
+        .attr("viewBox", "0 0 500 500")
+        .append("g")
+        .attr("transform","translate(" + margin + "," + margin + ")");
+
+    svg.style({
+        width: `${xSize}px`,
+        height: `${ySize}px`,
+    });
+    // X Axis
+
+
+    const gra = svg.append('g');
+    const data = [];
+    for (let i = 0; i < numPoints; i++) {
+        data.push([Math.random() * xMax, Math.random() * yMax]);
+    }
+
+    const center = {
+        x: xSize / 2,
+        y: ySize / 2,
+        rOffset: 10,
+    }
+
+    const colors = ['Red', 'Blue','Green', 'Yellow', 'Black', 'Gray']
+    const planets = [
+        {
+            name:'Sun',
+            size: center.rOffset - 2,
+            dist: 0,
+        },
+        {
+            name:'Mercury',
+            size: 1,
+            dist: 1,
+        },
+        {
+            name:'Venus',
+            size: 2,
+            dist: 2,
+        },
+        {
+            name:'Earth',
+            size: 2,
+            dist: 3,
+        },
+        {
+            name:'Mars',
+            size: 1,
+            dist: 3,
+        },
+        {
+            name:'Jupiter',
+            size: 4,
+            dist: 5,
+        },
+        {
+            name:'Saturn',
+            size: 3,
+            dist: 8,
+        },
+        {
+            name:'Uranus',
+            size: 3,
+            dist: 16,
+        },
+        {
+            name:'Neptune',
+            size: 3,
+            dist: 24,
+        },
+    ].map((p,i)=>{
+        return {
+            ...p,
+            angle: 0,//Math.random()
+            angleStep: p.dist === 0? 0 : 1/p.dist/100,
+            //initialAngle: Math.random(),
+            color: colors[i],
+            history: [],
+        }
+    })
+
+    const sel = document.getElementById('sel');
+    for (let i = 0; i < planets.length;i++) {
+        sel.options[i] = new Option(planets[i].name, i);
+    }
+    let trackP = 0;
+    sel.addEventListener("change", (event) => {
+        console.log(event.target.value)
+        trackP = parseInt(event.target.value);
+        planets.forEach(p=>p.history = []);
+    });
+
+
+    let inProcessing = false;
+    function doData() {
+        if (inProcessing) return;
+        inProcessing = true;
+        let trackX = 0;
+        let trackY = 0;
+        const data = planets.map((p, i)=>{
+            p.angle += p.angleStep;
+            if (p.dist === 0) {
+                p.x = 0;
+                p.y= 0;
+            } else {
+                const r = p.dist * 4 + center.rOffset;
+                p.x = r*Math.cos(p.angle);
+                p.y = r*Math.sin(p.angle);
+            }
+            if (i === trackP) {
+                trackX = p.x;
+                trackY = p.y;
+            }
+            return {
+                ...p
+            }
+        });
+        if (trackP === 0) {
+            trackX = 0;
+            trackY = 0;
+        }
+        data.forEach((d,i)=> {
+            d.x -= trackX;
+            d.y -= trackY;
+            planets[i].history.push({
+                x: d.x,
+                y: d.y,
+            })
+        })
+
+        const sel = gra
+            .selectAll("circle").data(data);
+        // Dots
+        sel.enter()
+            .append("circle")
+            .attr("r", d=>d.size);
+
+        sel.attr("cx", function (d) {
+            return d.x + center.x;
+        })
+            .attr("cy", function (d) {
+                return d.y + center.y;
+            }).style("fill", d=>d.color);
+
+        //sel.exit().remove();
+        inProcessing = false;
+        setTimeout(doData, 10);
+
+    }
+
+    setTimeout(doData, 10);
+</script>
+</html>
+
+
